@@ -1,8 +1,7 @@
-""" try:
+try:
     import pyperclip
 except ImportError:
-    pyperclip = None """
-pyperclip = None
+    pyperclip = None
 
 
 def main():
