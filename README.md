@@ -1,6 +1,6 @@
 # SA2SetAverageScript
 
-To download the latest version, go to the releases tab [here](https://github.com/Labreezy/SA2SetAverageScript/releases/latest). 
+To download the latest version, go to the releases tab [here](https://github.com/ILikeEggsToo/SA2SetAverageScript/releases). 
 
 ## Building (for developers)
 
