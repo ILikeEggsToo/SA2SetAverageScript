@@ -3,22 +3,25 @@ try:
 except ImportError:
     pyperclip = None
 
+from math import isclose
+
 
 def main():
     # get character and extra loadless time
     splitsCount = getSplitsCount()
-    extraLoadlessTime = get_extra_loadless_time()
+    extraLoadlessTime = getExtraLoadlessTime()
+    menuingSplits = getMenuingSplits()
 
     # continually ask user for goal times and calculate timestamps
     while True:
         print()
-        goalTime = get_goal_time()
-        levelTime = calculate_level_time(goalTime, splitsCount, extraLoadlessTime)
-        splitTimestampsSeconds = generate_timestamps_seconds(
-            levelTime, splitsCount, extraLoadlessTime
+        goalTime = getGoalTime()
+        levelTime = calculateLevelTime(goalTime, splitsCount, extraLoadlessTime)
+        splitTimestampsSeconds = generateTimestampsSeconds(
+            levelTime, goalTime, extraLoadlessTime, menuingSplits
         )
-        splitTimestampsFormatted = format_timestamps(splitTimestampsSeconds)
-        print_and_copy_timestamps(splitTimestampsFormatted)
+        splitTimestampsFormatted = formatTimestamps(splitTimestampsSeconds)
+        printAndCopyTimestamps(splitTimestampsFormatted)
 
 
 def getSplitsCount() -> int:
@@ -38,24 +41,48 @@ def getSplitsCount() -> int:
             print("Invalid input. Please try again.")
 
 
-def get_extra_loadless_time() -> float:
+def getExtraLoadlessTime() -> float:
     """
     Asks the user to enter the average extra loadless time per split and returns it as a float.
 
     Returns:
         float: The average extra loadless time per split.
     """
-    extraLoadlessTime = input(
-        "Enter average extra loadless time per split (default is 14.5): "
-    )
-    if extraLoadlessTime == "":
-        extraLoadlessTime = 14.5
-    else:
-        extraLoadlessTime = float(extraLoadlessTime)
+    while True:
+        try:
+            extraLoadlessTime = input(
+                "Enter average extra loadless time per split (default is 14.5): "
+            )
+            if extraLoadlessTime == "":
+                extraLoadlessTime = 14.5
+            else:
+                extraLoadlessTime = float(extraLoadlessTime)
+            break
+        except ValueError:
+            print("Invalid input. Please try again.")
     return extraLoadlessTime
 
 
-def get_goal_time() -> float:
+def getMenuingSplits() -> bool:
+    """
+    Asks the user if they want to include menuing splits and returns True if yes, False if no.
+
+    Returns:
+        bool: True if the user wants to include menuing splits, False if not.
+    """
+    while True:
+        menuingSplits = input(
+            "Do you have separate menuing splits? Press 1 or n for no, press 2 or y for yes: "
+        )
+        if menuingSplits == "1" or menuingSplits == "n":
+            return False
+        elif menuingSplits == "2" or menuingSplits == "y":
+            return True
+        else:
+            print("Invalid input. Please try again.")
+
+
+def getGoalTime() -> float:
     """
     Asks the user to enter the goal time in mm:ss format and returns it as a float in seconds.
 
@@ -75,7 +102,7 @@ def get_goal_time() -> float:
             print("Invalid input. Please enter time in mm:ss format.")
 
 
-def calculate_level_time(
+def calculateLevelTime(
     goalTime: float, splitsCount: int, extraLoadlessTime: float
 ) -> float:
     """
@@ -94,27 +121,38 @@ def calculate_level_time(
     return levelTime
 
 
-def generate_timestamps_seconds(
-    levelTime: float, splitsCount: int, extraLoadlessTime: float
+def generateTimestampsSeconds(
+    levelTime: float,
+    goalTime: float,
+    extraLoadlessTime: float,
+    menuingSplits: bool = False,
 ) -> list[float]:
     """
-    Generates a list of split timestamps in seconds based on the level time, splits count, and extra loadless time.
+    Generates a list of split timestamps in seconds based on the level time, goal time, extra loadless time, and menuing splits.
 
     Args:
         levelTime (float): The average level time.
-        splitsCount (int): The number of splits.
+        goalTime (float): The goal time in seconds.
         extraLoadlessTime (float): The average extra loadless time per split.
+        menuingSplits (bool, optional): Whether to include menuing splits. Defaults to False.
 
     Returns:
         list[float]: The list of split timestamps in seconds.
     """
     splitTimestampsSeconds = [levelTime]
-    for i in range(2, splitsCount + 1):
-        splitTimestampsSeconds.append(levelTime * i + extraLoadlessTime * (i - 1))
+    time = levelTime
+    # use isclose to avoid funny floating point rounding errors
+    while not isclose(time, goalTime):
+        time += extraLoadlessTime
+        if menuingSplits:
+            splitTimestampsSeconds.append(time)
+        time += levelTime
+        splitTimestampsSeconds.append(time)
+
     return splitTimestampsSeconds
 
 
-def format_timestamps(splitTimestampsSeconds: list[float]) -> list[str]:
+def formatTimestamps(splitTimestampsSeconds: list[float]) -> list[str]:
     """
     Formats the split timestamps in seconds to mm:ss format.
 
@@ -131,7 +169,7 @@ def format_timestamps(splitTimestampsSeconds: list[float]) -> list[str]:
     return splitTimestampsFormatted
 
 
-def print_and_copy_timestamps(splitTimestampsFormatted: list[str]):
+def printAndCopyTimestamps(splitTimestampsFormatted: list[str]):
     """
     Prints the split timestamps and copies them to the clipboard if pyperclip is installed.
 
